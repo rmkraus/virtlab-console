@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Virtual Lab</title>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/patternfly/3.24.0/css/patternfly.min.css">
+  <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/patternfly/3.24.0/css/patternfly-additions.min.css">
+  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+  <body class="portal-pf">
+
+    <nav class="navbar navbar-default navbar-pf" role="navigation">
+      <div class="navbar-header">
+        <a class="navbar-brand" href="/">
+          <p>Virtual Lab</p>
+        </a>
+      </div>
+      <div class="collapse navbar-collapse navbar-collapse-1">
+        <ul class="nav navbar-nav navbar-utility">
+          <li class="dropdown">
+            <a>
+            <button class="btn btn-link" data-toggle="dropdown">
+              <span class="pficon pficon-user"></span>
+              <span class="dropdown-title">
+                  {{ session.name }}
+              </span>
+            </button>
+        </a>
+          </li>
+          <li class="dropdown">
+              <a href="/logout">
+            <button class="btn btn-link" data-toggle="dropdown">
+                  <span class="pficon pficon-close"></span>
+              <span class="dropdown-title">
+                  Logout
+              </span>
+            </button>
+              </a>
+          </li>
+        </ul>
+        <ul class="nav navbar-nav navbar-primary">
+        </ul>
+      </div>
+    </nav>
+
+{% if not session.admin %}
+<div class="comfy panel panel-default">
+ <div class="panel-heading">
+    <h3 class="panel-title">Information</h3>
+  </div>
+    <div class="panel-body">
+        <h1>You are student number <b>{{ session.index }}</b>.</h1>
+    </div>
+</div>
+{% endif %}
+
+<div id="pf-list-standard" class="list-group list-view-pf list-view-pf-view">
+
+{% if session.admin %}
+  <div class="list-group-item">
+    <div class="list-view-pf-actions">
+      <button class="btn btn-default" onclick="window.open('{{ url_for('roster') }}');">Launch</button>  <!-- LINK -->
+    </div>
+    <div class="list-view-pf-main-info">
+      <div class="list-view-pf-left">
+        <span class="fa fa-id-card list-view-pf-icon-sm"></span>  <!-- ICON -->
+      </div>
+      <div class="list-view-pf-body">
+        <div class="list-view-pf-description">
+          <div class="list-group-item-heading">
+            Class Roster
+          </div>
+          <div class="list-group-item-text">
+          </div>
+        </div>
+      </div>
+    </div>
+</div>
+{% endif %}
+
+{% if session.admin %}
+    {% set targets = range(1, session.index + 1) %}
+{% else %}
+    {% set targets = [session.index] %}
+{% endif %}
+
+{% for index in targets %}
+{% set url = "https://user" + index|string + "." + config.DOMAIN + ":8443" %}
+  <div class="list-group-item">
+    <div class="list-view-pf-actions">
+      <button class="btn btn-default" onclick="window.open('{{ url }}');">Launch</button>  <!-- LINK -->
+    </div>
+    <div class="list-view-pf-main-info">
+      <div class="list-view-pf-left">
+        <span class="fa fa-desktop list-view-pf-icon-sm"></span>  <!-- ICON -->
+      </div>
+      <div class="list-view-pf-body">
+        <div class="list-view-pf-description">
+          <div class="list-group-item-heading">
+            Workstation {{ index }}
+          </div>
+          <div class="list-group-item-text">
+            Owner: {{ config.roster[index].name }}<br />
+            Username: student<br />
+            Password: {{ config.USER_PASS }}
+          </div>
+        </div>
+      </div>
+    </div>
+</div>
+{% endfor %}
+
+
+{% for link in config.OTHER_RESOURCES %}
+  <div class="list-group-item">
+    <div class="list-view-pf-actions">
+      <button class="btn btn-default" onclick="window.open('{{ link.url | render }}');">Launch</button>  <!-- LINK -->
+    </div>
+    <div class="list-view-pf-main-info">
+      <div class="list-view-pf-left">
+        <span class="fa fa-globe list-view-pf-icon-sm"></span>  <!-- ICON -->
+      </div>
+      <div class="list-view-pf-body">
+        <div class="list-view-pf-description">
+          <div class="list-group-item-heading">
+            {{ link.name | render }}
+          </div>
+          <div class="list-group-item-text">
+            {{ link.desc | render }}
+          </div>
+        </div>
+      </div>
+    </div>
+</div>
+
+{% endfor %}
+
+</div>
+</div>
+
+  </body>
+
+</html>
