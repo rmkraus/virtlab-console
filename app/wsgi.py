@@ -12,7 +12,7 @@ app.config['roster'] = defaultdict(lambda: {"name": "EMPTY"})
 @app.route('/')
 def index():
     if session.get('userid'):
-        if session['userid'] > 0:
+        if session['userid'] != -1:
             update_roster(session['index'], \
                 session['email'], session['title'], session['name'])
         return render_template('index.html')
@@ -67,8 +67,8 @@ def get_index(userid):
     return uidx
 
 def update_roster(index, email, title, name):
-    app.config['roster'][index] = \
-        {"email": email, "title": title, "name": name}
+    app.config['roster'].update(
+        {index: {"email": email, "title": title, "name": name}})
 
 @app.template_filter('render')
 def render(value):
