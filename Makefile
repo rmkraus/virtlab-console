@@ -26,7 +26,7 @@ clean_image:
 	podman image rm -f $(IMAGE):dev || :
 
 run:
-	podman run --name "$(NAME)" -it $(IMAGE):dev || podman start -ia "$(NAME)"
+	podman run --name "$(NAME)" -v $(DEVDIR)/data:/data:Z -p 8080:8080 -it $(IMAGE):dev || podman start -ia "$(NAME)"
 
 join:
 	podman exec -it "$(NAME)" /bin/bash
