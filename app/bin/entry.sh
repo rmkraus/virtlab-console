@@ -1,3 +1,8 @@
 source /opt/my_python/bin/activate
 
-gunicorn -b 0.0.0.0:8080 -w 1 --threads 1 wsgi:app
+
+if [ -e /data/cert.pem ] && [ -e /data/privkey.pem ]; then
+    gunicorn -b 0.0.0.0:8443 --certfile /data/cert.pem --keyfile=/data/privkey.pem wsgi:app
+else
+    gunicorn -b 0.0.0.0:8080 wsgi:app
+fi
