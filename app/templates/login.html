@@ -25,6 +25,14 @@
             <div class="card-pf">
               <header class="login-pf-header">
                 <h1>Log in to the lab</h1>
+
+                {% if err %}
+                <div class="alert alert-danger">
+                  <span class="pficon pficon-error-circle-o"></span>
+                  <strong>{{ err }}</strong>
+                </div>
+                {% endif %}
+
               </header>
               <form method="post">
                 <div class="form-group">

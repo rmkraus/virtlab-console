@@ -2,6 +2,8 @@ from collections import defaultdict
 from lib.flask_extended import Flask
 from flask import render_template, session, redirect, url_for, request
 from jinja2 import Template
+from pymongo import MongoClient
+import logging
 
 app = Flask(__name__)
 app.config.from_yaml('/data/config.yml')
@@ -9,43 +11,30 @@ app.config['index_pool'] = iter(range(1, int(app.config['USER_COUNT']) + 1))
 app.config['index_map'] = {}
 app.config['roster'] = defaultdict(lambda: {"name": "EMPTY"})
 
+db = MongoClient().virtlab
+
+
 @app.route('/')
 def index():
-    if session.get('userid'):
-        if session['userid'] != -1:
-            update_roster(session['index'], \
-                session['email'], session['title'], session['name'])
-        return render_template('index.html')
+    if session.get('_id'):
+        roster = _get_roster(session['admin'])
+        return render_template('index.html', roster=roster)
     return redirect(url_for('login'))
 
 @app.route('/login', methods=['POST', 'GET'])
 def login():
-    if request.method == 'POST' and \
-            request.form['inputPassword'] == app.config['USER_PASS']:
-        session['email'] = request.form['inputEmail']
-        session['userid'] = hash(session['email'].lower())
-        session['title'] = request.form['inputTitle']
-        session['name'] = request.form['inputName']
-        session['index'] = get_index(session['userid'])
-        session['admin'] = False
-        return redirect('/')
-
-    elif request.method == 'POST' and \
-            request.form['inputPassword'] == app.config['ADMIN_PASS']:
-        session['admin'] = True
-        session['userid'] = -1
-        session['index'] = int(app.config['USER_COUNT'])
-        session['email'] = None
-        session['title'] = None
-        session['name'] = 'root'
-        return redirect('/')
-
-    return render_template('login.html')
+    err = ''
+    if request.method == 'POST':
+        (err, user) = _authenticate(request.form)
+        if user:
+            session.update(user)
+            return redirect('/')
+    return render_template('login.html', err=err)
 
 @app.route('/logout')
 def logout():
     session['email'] = None
-    session['userid'] = None
+    session['_id'] = None
     session['title'] = None
     session['name'] = None
     session['index'] = None
@@ -54,22 +43,59 @@ def logout():
 
 @app.route('/roster')
 def roster():
-    return repr(app.config['roster'])
+    return repr(_get_roster(session['admin']))
 
-def get_index(userid):
-    uidx = app.config['index_map'].get(userid)
-    if not uidx:
-        try:
-            uidx = next(app.config['index_pool'])
-        except StopIteration:
-            uidx = None
-        app.config['index_map'][userid] = uidx
-    return uidx
+def _authenticate(answers):
+    if answers['inputPassword'] == app.config['USER_PASS']:
+        return _authorize(answers)
+    elif answers['inputPassword'] == app.config['ADMIN_PASS']:
+        return ('',
+                {"admin": True,
+                 "_id": -1,
+                 "index": int(app.config['USER_COUNT']),
+                 "email": None,
+                 "title": None,
+                 "name": "root"})
+    return ('Invalid Credentials', {})
 
-def update_roster(index, email, title, name):
-    app.config['roster'].update(
-        {index: {"email": email, "title": title, "name": name}})
+def _authorize(answers):
+    user_id = hash(answers['inputEmail'].lower())
+    user = db.roster.find_one({"_id": user_id})
+
+    # register new user
+    if not user:
+        # get avialable student number
+        next_index = _get_index()
+        if not next_index:
+            app.logging.error('The classroom is full')
+            return ('The classroom is full.', {})
+        # register student
+        user = {"admin": False,
+                "_id": user_id,
+                "index": next_index,
+                "email": answers['inputEmail'],
+                "title": answers['inputTitle'],
+                "name": answers['inputName']}
+        db.roster.insert_one(user)
+
+    return ('', user)
+
+def _get_index():
+    rec = db.index_pool.find_one_and_delete({})
+    if rec:
+        return rec['value']
+    return None
+
+def _get_roster(is_admin):
+    if is_admin:
+        return [rec for rec in db.roster.find({})]
+    return [session]
 
 @app.template_filter('render')
 def render(value):
     return Template(value).render(session)
+
+if __name__ != "main":
+    gunicorn_logger = logging.getLogger('gunicorn.error')
+    app.logger.handlers = gunicorn_logger.handlers
+    app.logger.setLevel(gunicorn_logger.level)

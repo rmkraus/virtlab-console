@@ -1,2 +1,4 @@
 *.retry
 data
+__pycache__
+*.swp
