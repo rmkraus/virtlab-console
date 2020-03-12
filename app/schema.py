@@ -27,7 +27,7 @@ user_count = int(config['USER_COUNT'])
 if user_count > last_count:
     diff_count = user_count - last_count
     print('Adding {} more seats'.format(diff_count))
-    new_members = range(last_count, user_count)
+    new_members = range(last_count + 1, user_count)
     db.index_pool.insert_many([{"value": x} for x in new_members])
     db.attrs.update_one({"_id": "last_count"}, {"$set": {"value": user_count}})
 

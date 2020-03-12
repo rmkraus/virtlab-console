@@ -67,7 +67,7 @@ def _authorize(answers):
         # get avialable student number
         next_index = _get_index()
         if not next_index:
-            app.logging.error('The classroom is full')
+            app.logger.error('The classroom is full')
             return ('The classroom is full.', {})
         # register student
         user = {"admin": False,
