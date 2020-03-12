@@ -5,7 +5,7 @@ WORKDIR /app
 COPY app /app
 RUN useradd www && \
     dnf update -y && \
-    dnf install -y libyaml && \
+    dnf install -y libyaml nginx && \
     dnf install -y gcc && \
     python3 -m venv /opt/my_python && \
     /opt/my_python/bin/python -m pip install --upgrade pip && \

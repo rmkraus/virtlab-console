@@ -26,7 +26,7 @@ clean_image:
 	podman image rm -f $(IMAGE):dev || :
 
 run:
-	podman run --name "$(NAME)" -v $(DEVDIR)/data:/data:Z -p 8080:8080 -p 8443:8443 -it $(IMAGE):dev || podman start -ia "$(NAME)"
+	podman run --name "$(NAME)" -v $(DEVDIR)/data:/data:Z -p 1080:1080 -p 1443:1443 -it $(IMAGE):dev || podman start -ia "$(NAME)"
 
 join:
 	podman exec -it "$(NAME)" /bin/bash
@@ -40,4 +40,4 @@ stop:
 devel: clean_container _devel_run
 
 _devel_run:
-	podman run --name "$(NAME)" -v $(DEVDIR)/app:/app:Z -v $(DEVDIR)/data:/data:Z -p 8080:8080 -p 8443:8443 -it $(IMAGE):dev /bin/sh
+	podman run --name "$(NAME)" -v $(DEVDIR)/app:/app:Z -v $(DEVDIR)/data:/data:Z -p 1080:1080 -p 1443:1443 -it $(IMAGE):dev /bin/sh

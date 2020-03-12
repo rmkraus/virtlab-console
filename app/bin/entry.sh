@@ -3,12 +3,12 @@
 source /opt/my_python/bin/activate
 mkdir -p /data/logs
 mkdir -p /data/db
+mkdir -p /data/nginx/tmp
 export MONGO_PID=""
 
 function mongo_start() {
     mongod --port 27017 --bind_ip 127.0.0.1 --dbpath /data/db &> /data/logs/mongodb.log &
     export MONGO_PID=$!
-    echo "mongo pid $MONGO_PID"
 }
 
 function mongo_stop() {
@@ -19,6 +19,14 @@ function mongo_stop() {
 
 function mongo_schema_update() {
     python schema.py 2>&1 | tee /data/logs/console_setup.log
+}
+
+function nginx_start() {
+    nginx -c /app/nginx.conf
+}
+
+function nginx_stop () {
+    nginx -c /app/nginx.conf -s stop
 }
 
 function gunicorn_run() {
@@ -42,5 +50,7 @@ function gunicorn_run() {
 
 mongo_start
 mongo_schema_update
+nginx_start
 gunicorn_run
+nginx_stop
 mongo_stop
