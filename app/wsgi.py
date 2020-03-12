@@ -1,15 +1,11 @@
-from collections import defaultdict
 from lib.flask_extended import Flask
 from flask import render_template, session, redirect, url_for, request
 from jinja2 import Template
 from pymongo import MongoClient
-import logging
+from tabulate import tabulate
 
 app = Flask(__name__)
 app.config.from_yaml('/data/config.yml')
-app.config['index_pool'] = iter(range(1, int(app.config['USER_COUNT']) + 1))
-app.config['index_map'] = {}
-app.config['roster'] = defaultdict(lambda: {"name": "EMPTY"})
 
 db = MongoClient().virtlab
 
@@ -43,7 +39,10 @@ def logout():
 
 @app.route('/roster')
 def roster():
-    return repr(_get_roster(session['admin']))
+    roster = _get_roster(session['admin'])
+    _ = [rec.pop('_id', None) for rec in roster]
+    _ = [rec.pop('admin', None) for rec in roster]
+    return tabulate(roster, headers="keys", tablefmt="html")
 
 def _authenticate(answers):
     if answers['inputPassword'] == app.config['USER_PASS']:
@@ -67,7 +66,6 @@ def _authorize(answers):
         # get avialable student number
         next_index = _get_index()
         if not next_index:
-            app.logger.error('The classroom is full')
             return ('The classroom is full.', {})
         # register student
         user = {"admin": False,
@@ -94,8 +92,3 @@ def _get_roster(is_admin):
 @app.template_filter('render')
 def render(value):
     return Template(value).render(session)
-
-if __name__ != "main":
-    gunicorn_logger = logging.getLogger('gunicorn.error')
-    app.logger.handlers = gunicorn_logger.handlers
-    app.logger.setLevel(gunicorn_logger.level)
